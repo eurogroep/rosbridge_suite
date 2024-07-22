@@ -2,8 +2,8 @@
 Changelog for package rosbridge_library
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.3.3 (2024-07-22)
+------------------
 * feat(rosbridge_library): Support direct call to action services/msgs
 * Contributors: Yannick de Hoop
 
