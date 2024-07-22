@@ -33,6 +33,7 @@
 
 import importlib
 from threading import Lock
+import re
 
 """ ros_loader contains methods for dynamically loading ROS message classes at
 runtime.  It's achieved by using roslib to load the manifest files for the
@@ -47,6 +48,7 @@ _loaded_srvs = {}
 _msgs_lock = Lock()
 _srvs_lock = Lock()
 
+CAMEL_TO_SNAKE_CASE_REGEX = re.compile(r'(?<!^)(?=[A-Z])')
 
 class InvalidTypeStringException(Exception):
     def __init__(self, typestring):
@@ -116,6 +118,8 @@ def _get_msg_class(typestring):
         splits = [x for x in typestring.split("/") if x]
         if len(splits) > 2:
             subname = ".".join(splits[1:-1])
+            if subname == "action":
+                subname = f"{subname}._{splits[-1].split('_')[0].lower()}"
         else:
             subname = "msg"
 
@@ -138,6 +142,8 @@ def _get_srv_class(typestring):
         splits = [x for x in typestring.split("/") if x]
         if len(splits) > 2:
             subname = ".".join(splits[1:-1])
+            if subname == "action":
+                subname = f"{subname}._{CAMEL_TO_SNAKE_CASE_REGEX.sub('_', splits[-1].split('_')[0]).lower()}"
         else:
             subname = "srv"
 
