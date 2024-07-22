@@ -2,6 +2,11 @@
 Changelog for package rosbridge_library
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* feat(rosbridge_library): Support direct call to action services/msgs
+* Contributors: Yannick de Hoop
+
 1.3.2 (2023-09-27)
 ------------------
 * Interpret call_services_in_new_thread as boolean (`#857 <https://github.com/RobotWebTools/rosbridge_suite/issues/857>`_)
