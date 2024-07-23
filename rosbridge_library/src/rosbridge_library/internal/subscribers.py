@@ -110,7 +110,7 @@ class MultiSubscriber:
         # - https://docs.ros.org/en/rolling/Concepts/About-Quality-of-Service-Settings.html
         # - https://github.com/RobotWebTools/rosbridge_suite/issues/551
         qos = QoSProfile(
-            depth=10,
+            depth=100,
             durability=DurabilityPolicy.VOLATILE,
             reliability=ReliabilityPolicy.RELIABLE,
         )
