@@ -7,8 +7,8 @@ Changelog for package rosbridge_library
 * feat(rosbridge_library): Support direct call to action services/msgs
 * Contributors: Yannick de Hoop
 
-Forthcoming
------------
+1.3.4 (2024-10-16)
+------------------
 * feat(rosbridge_library): Set QoS depth to 100
 * 1.3.3
 * CHANGELOG
