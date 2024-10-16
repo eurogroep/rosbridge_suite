@@ -5,6 +5,12 @@ Changelog for package rosapi_msgs
 1.3.3 (2024-07-22)
 ------------------
 
+Forthcoming
+-----------
+* 1.3.3
+* CHANGELOG
+* Contributors: Yannick de Hoop
+
 1.3.2 (2023-09-27)
 ------------------
 
