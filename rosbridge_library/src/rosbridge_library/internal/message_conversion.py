@@ -233,15 +233,6 @@ def msg_class_type_repr(msg_class: type[ROSMessage]) -> str:
 def _from_inst(
     inst: ROSMessage | ListType | PrimitiveType | bytes, rostype: str
 ) -> dict | list | PrimitiveType | bytes | None:
-    # Special case for uint8[], we encode the string
-    for binary_type, expression in ros_binary_types_list_braces:
-        if expression.sub(binary_type, rostype) in ros_binary_types:
-            if not isinstance(inst, list_types):
-                err_msg = f"inst is not a list type, but a {type(inst)}"
-                raise TypeError(err_msg)
-            encoded = get_encoder()(inst)
-            return encoded.decode("ascii")
-
     # Check for time or duration
     if rostype in ros_time_types:
         if not isinstance(inst, TimeMsg | DurationMsg):
