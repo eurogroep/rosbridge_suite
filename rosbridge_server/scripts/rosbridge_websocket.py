@@ -237,7 +237,15 @@ async def async_main() -> None:
     executor = SingleThreadedExecutor()
     executor.add_node(node)
 
-    spin_thread = threading.Thread(target=executor.spin)
+    def spin_thread_fn() -> None:
+        try:
+            executor.spin()
+        except Exception as e:
+            print(f"Spin thread exception: {e}")
+            print(f"Retry spin")
+            spin_thread_fn()
+
+    spin_thread = threading.Thread(target=spin_thread_fn)
     spin_thread.start()
 
     loop = asyncio.get_running_loop()
