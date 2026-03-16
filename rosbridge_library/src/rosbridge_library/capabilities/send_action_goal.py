@@ -36,9 +36,9 @@ import fnmatch
 from functools import partial
 from threading import Thread
 from typing import TYPE_CHECKING, Any
-from rclpy.executors import Executor
-from rclpy.task import Task, Future
+
 from action_msgs.msg import GoalStatus
+from rclpy.task import Task
 
 from rosbridge_library.capability import Capability
 from rosbridge_library.internal.actions import SendGoal
@@ -58,8 +58,7 @@ class SendActionGoal(Capability):
     )
     cancel_action_goal_msg_fields = ((True, "action", str),)
 
-    client_handler_list: dict[str, Task]
-    futures_to_do: []
+    executor_tasks_list: dict[str, Task] = {}
 
     parameter_names = ("actions_glob", "send_action_goals_in_new_thread")
 
@@ -69,17 +68,12 @@ class SendActionGoal(Capability):
     def __init__(self, protocol: Protocol) -> None:
         # Call superclass constructor
         Capability.__init__(self, protocol)
-        self.futures_to_do = []
-        self.client_handler_list = {}
+
         # Register the operations that this capability provides
         if self.send_action_goals_in_new_thread:
             # Sends the action goal in a separate thread so multiple actions can be processed simultaneously.
             protocol.node_handle.get_logger().info("Sending action goals in new thread")
-
-            protocol.register_operation(
-                "send_action_goal",
-                lambda msg: self.add_task_to_executor(msg)
-            )
+            protocol.register_operation("send_action_goal", self.add_task_to_executor)
         else:
             # Sends the actions goal in this thread, so actions block and must be processed sequentially.
             protocol.node_handle.get_logger().info("Sending action goals in existing thread")
@@ -91,15 +85,25 @@ class SendActionGoal(Capability):
             lambda msg: Thread(target=self.cancel_action_goal, args=(msg,)).start(),
         )
 
-    def add_task_to_executor(self, msg:  dict) -> None:
+    def add_task_to_executor(self, msg: dict) -> None:
         cid: str | None = msg.get("id")
-        task = self.protocol.node_handle.executor.create_task(partial(self.send_action_goal, msg))
-        self.client_handler_list[cid] = task
+        if self.protocol.node_handle.executor is not None and cid is not None:
+            task = self.protocol.node_handle.executor.create_task(
+                partial(self.send_action_goal, msg)
+            )
+            self.executor_tasks_list[cid] = task
+        else:
+            self.protocol.node_handle.get_logger().error(
+                f"Failed sending action goal: {cid}, executor is None"
+            )
 
     def send_action_goal(self, message: dict) -> None:
+        # Pull out the ID
+        cid: str | None = message.get("id")
+
         # Typecheck the args
         self.basic_type_check(message, self.send_action_goal_msg_fields)
-        cid: str | None = message.get("id")
+
         # Extract the args
         action: str = message["action"]
         action_type: str = message["action_type"]
@@ -153,8 +157,8 @@ class SendActionGoal(Capability):
         cid = extract_id(action, cid)
 
         # Cancel the action
-        if cid in self.client_handler_list:
-            client_handler = self.client_handler_list[cid]
+        if cid in self.executor_tasks_list:
+            client_handler = self.executor_tasks_list[cid]
             if client_handler.send_goal_helper is not None:
                 client_handler.send_goal_helper.cancel_goal()
 

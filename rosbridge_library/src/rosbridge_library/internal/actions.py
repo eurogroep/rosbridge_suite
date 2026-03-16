@@ -32,7 +32,7 @@
 from __future__ import annotations
 
 import time
-from threading import Thread, current_thread
+from threading import Thread
 from typing import TYPE_CHECKING, Any, Generic, cast
 
 from rclpy.action import ActionClient
@@ -179,8 +179,8 @@ class SendGoal(Generic[ROSActionGoalT, ROSActionResultT, ROSActionFeedbackT]):
             raise Exception(msg)
         send_goal_future = client.send_goal_async(inst, feedback_callback=feedback_cb)  # type: ignore[arg-type]
         send_goal_future.add_done_callback(self.goal_response_cb)
-        return send_goal_future
 
+        return send_goal_future
 
     def cancel_goal(self) -> None:
         while self.goal_handle is None and self.result is None:
