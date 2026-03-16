@@ -36,11 +36,12 @@ import fnmatch
 from functools import partial
 from threading import Thread
 from typing import TYPE_CHECKING, Any
-
+from rclpy.executors import Executor
+from rclpy.task import Task, Future
 from action_msgs.msg import GoalStatus
 
 from rosbridge_library.capability import Capability
-from rosbridge_library.internal.actions import ActionClientHandler
+from rosbridge_library.internal.actions import SendGoal
 from rosbridge_library.internal.message_conversion import extract_values
 
 if TYPE_CHECKING:
@@ -57,7 +58,8 @@ class SendActionGoal(Capability):
     )
     cancel_action_goal_msg_fields = ((True, "action", str),)
 
-    client_handler_list: dict[str, ActionClientHandler]
+    client_handler_list: dict[str, Task]
+    futures_to_do: []
 
     parameter_names = ("actions_glob", "send_action_goals_in_new_thread")
 
@@ -67,16 +69,16 @@ class SendActionGoal(Capability):
     def __init__(self, protocol: Protocol) -> None:
         # Call superclass constructor
         Capability.__init__(self, protocol)
-
+        self.futures_to_do = []
         self.client_handler_list = {}
-
         # Register the operations that this capability provides
         if self.send_action_goals_in_new_thread:
             # Sends the action goal in a separate thread so multiple actions can be processed simultaneously.
             protocol.node_handle.get_logger().info("Sending action goals in new thread")
+
             protocol.register_operation(
                 "send_action_goal",
-                lambda msg: Thread(target=self.send_action_goal, args=(msg,)).start(),
+                lambda msg: self.add_task_to_executor(msg)
             )
         else:
             # Sends the actions goal in this thread, so actions block and must be processed sequentially.
@@ -89,13 +91,15 @@ class SendActionGoal(Capability):
             lambda msg: Thread(target=self.cancel_action_goal, args=(msg,)).start(),
         )
 
-    def send_action_goal(self, message: dict) -> None:
-        # Pull out the ID
-        cid: str | None = message.get("id")
+    def add_task_to_executor(self, msg:  dict) -> None:
+        cid: str | None = msg.get("id")
+        task = self.protocol.node_handle.executor.create_task(partial(self.send_action_goal, msg))
+        self.client_handler_list[cid] = task
 
+    def send_action_goal(self, message: dict) -> None:
         # Typecheck the args
         self.basic_type_check(message, self.send_action_goal_msg_fields)
-
+        cid: str | None = message.get("id")
         # Extract the args
         action: str = message["action"]
         action_type: str = message["action_type"]
@@ -123,34 +127,18 @@ class SendActionGoal(Capability):
         else:
             self.protocol.log("debug", "No action security glob, not checking sending action goal.")
 
-        # Check for deprecated action ID, eg. /rosbridge/topics#33
-        cid = extract_id(action, cid)
-
         # Create the callbacks
         s_cb = partial(self._success, cid, action, fragment_size, compression)
-        e_cb = partial(self._failure, cid, action)
         f_cb = partial(self._feedback, cid, action) if message.get("feedback", False) else None
 
-        # Run action client handler in the same thread.
-        client_handler: ActionClientHandler[ROSMessage, ROSMessage, ROSMessage] = (
-            ActionClientHandler(
-                trim_action_name(action),
-                action_type,
-                args,
-                s_cb,
-                e_cb,
-                f_cb,
-                self.protocol.node_handle,
-            )
+        future = SendGoal().send_goal(
+            self.protocol.node_handle,
+            trim_action_name(action),
+            action_type,
+            args=args,
+            feedback_cb=f_cb,
         )
-
-        if cid is not None:
-            self.client_handler_list[cid] = client_handler
-
-        client_handler.run()
-
-        if cid is not None:
-            del self.client_handler_list[cid]
+        future.add_done_callback(lambda f: self._done_callback(cid, action, s_cb, self._failure, f))
 
     def cancel_action_goal(self, message: dict) -> None:
         # Extract the args
@@ -169,6 +157,13 @@ class SendActionGoal(Capability):
             client_handler = self.client_handler_list[cid]
             if client_handler.send_goal_helper is not None:
                 client_handler.send_goal_helper.cancel_goal()
+
+    def _done_callback(self, cid: str | None, action: str, s_cb, e_cb, future) -> None:
+        try:
+            result = future.result()
+            s_cb(cid, action, result)
+        except Exception as exc:
+            e_cb(cid, action, exc)
 
     def _success(
         self,

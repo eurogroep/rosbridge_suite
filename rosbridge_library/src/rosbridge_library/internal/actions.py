@@ -32,7 +32,7 @@
 from __future__ import annotations
 
 import time
-from threading import Thread
+from threading import Thread, current_thread
 from typing import TYPE_CHECKING, Any, Generic, cast
 
 from rclpy.action import ActionClient
@@ -110,22 +110,6 @@ class ActionClientHandler(Thread, Generic[ROSActionGoalT, ROSActionResultT, ROSA
             SendGoal()
         )
 
-    def run(self) -> None:
-        try:
-            # Call the service and pass the result to the success handler
-            self.success(
-                self.send_goal_helper.send_goal(
-                    self.node_handle,
-                    self.action,
-                    self.action_type,
-                    args=self.args,
-                    feedback_cb=self.feedback,
-                )
-            )
-        except Exception as e:
-            # On error, just pass the exception to the error handler
-            self.error(e)
-
 
 def args_to_action_goal_instance(inst: ROSMessage, args: list | dict[str, Any] | None) -> None:
     """
@@ -179,7 +163,7 @@ class SendGoal(Generic[ROSActionGoalT, ROSActionResultT, ROSActionFeedbackT]):
         action_type: str,
         args: list | dict[str, Any] | None = None,
         feedback_cb: Callable[[FeedbackMessage[ROSActionFeedbackT]], None] | None = None,
-    ) -> dict[str, Any]:
+    ) -> Future:
         # Given the action name and type, fetch a request instance
         action_name = expand_topic_name(action, node_handle.get_name(), node_handle.get_namespace())
         action_class = get_action_class(action_type)
@@ -195,22 +179,8 @@ class SendGoal(Generic[ROSActionGoalT, ROSActionResultT, ROSActionFeedbackT]):
             raise Exception(msg)
         send_goal_future = client.send_goal_async(inst, feedback_callback=feedback_cb)  # type: ignore[arg-type]
         send_goal_future.add_done_callback(self.goal_response_cb)
+        return send_goal_future
 
-        while self.result is None:
-            time.sleep(self.sleep_time)
-
-        client.destroy()
-
-        if isinstance(self.result, Exception):
-            raise self.result
-
-        if self.result is not None:
-            # Turn the response into JSON and pass to the callback
-            json_response = extract_values(self.result)
-        else:
-            raise Exception(self.result)
-
-        return json_response
 
     def cancel_goal(self) -> None:
         while self.goal_handle is None and self.result is None:
