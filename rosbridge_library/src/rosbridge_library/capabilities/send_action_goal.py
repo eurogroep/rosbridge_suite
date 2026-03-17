@@ -56,8 +56,9 @@ class SendActionGoal(Capability):
     )
     cancel_action_goal_msg_fields = ((True, "action", str),)
 
-    client_handler_list: dict[str, ActionClientHandler] = {}
+    client_handler_list: dict[str, ActionClientHandler]
     action_goal_queue: list[dict] = []
+
     parameter_names = ("actions_glob", "send_action_goals_in_new_thread")
 
     actions_glob: list[str] | None = None
@@ -67,6 +68,9 @@ class SendActionGoal(Capability):
         # Call superclass constructor
         Capability.__init__(self, protocol)
 
+        self.client_handler_list = {}
+
+        # Register the operations that this capability provides
         protocol.register_operation("send_action_goal", lambda msg: self.add_task_to_executor(msg, self.send_action_goal))
         protocol.register_operation(
             "cancel_action_goal",
@@ -151,12 +155,12 @@ class SendActionGoal(Capability):
             self.client_handler_list[cid].cancel_goal()
 
     def _success(
-            self,
-            cid: str | None,
-            action: str,
-            _fragment_size: int | None,
-            _compression: str,
-            message: dict,
+        self,
+        cid: str | None,
+        action: str,
+        _fragment_size: int | None,
+        _compression: str,
+        message: dict,
     ) -> None:
         outgoing_message = {
             "op": "action_result",
@@ -215,5 +219,5 @@ def extract_id(action: str, cid: str | None) -> str | None:
     if cid is not None:
         return cid
     if "#" in action:
-        return action[action.find("#") + 1:]
+        return action[action.find("#") + 1 :]
     return None

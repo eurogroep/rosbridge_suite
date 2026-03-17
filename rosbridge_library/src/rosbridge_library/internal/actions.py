@@ -61,6 +61,7 @@ if TYPE_CHECKING:
 
     from rosbridge_library.internal.type_support import (
         FeedbackMessage,
+        GetResultServiceResponse,
         ROSMessage,
     )
 
