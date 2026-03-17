@@ -31,13 +31,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 from __future__ import annotations
 
-import time
-from threading import Thread
 from typing import TYPE_CHECKING, Any, Generic, cast
-
 from rclpy.action import ActionClient
-from rclpy.expand_topic_name import expand_topic_name
-
 from rosbridge_library.internal.message_conversion import (
     extract_values,
     populate_instance,
@@ -107,13 +102,12 @@ class ActionClientHandler(Generic[ROSActionGoalT, ROSActionResultT, ROSActionFee
 
         :param action: The name of the action to execute.
         :param action_type: The type of the action to execute.
-        :param args: Arguments to pass to the action. Can be an ordered list, or a dict of
-            name-value pairs. Anything else will be treated as though no arguments were provided
-            (which is still valid for some kinds of actions)
         :param success_callback: A callback to call with the JSON result of the service call
         :param error_callback: A callback to call if an error occurs. The callback will be passed
             the exception that caused the failure
+        :param feedback_callback: A callback to call with feedback messages from the action server
         :param node_handle: A ROS 2 node handle to call services
+        :param server_timeout_time: The time, in seconds, to wait for a server to be available
         """
         self.action = action
         self.action_type = action_type
@@ -141,16 +135,21 @@ class ActionClientHandler(Generic[ROSActionGoalT, ROSActionResultT, ROSActionFee
             self.error_callback(Exception(msg))
             self.goal_handle = None
             return None
-        send_goal_future : Future = self.action_client.send_goal_async(inst, feedback_callback=self.feedback_callback)
-        send_goal_future.add_done_callback(self.goal_response_cb)
+        send_goal_future : Future = self.action_client.send_goal_async(inst, feedback_callback=lambda: self.feedback_callback)
+        send_goal_future.add_done_callback(self._goal_response_cb)
         return send_goal_future
 
-    def get_result_cb(self, future: Future) -> None:
+    def cancel_goal(self) -> None:
+        if self.goal_handle:
+            cancel_goal_future = self.goal_handle.cancel_goal_async()
+            cancel_goal_future.add_done_callback(self._goal_cancel_cb)
+
+    def _get_result_cb(self, future: Future) -> None:
         self.success_callback(extract_values(future.result()))
         self.goal_handle = None
         self.action_client.destroy()
 
-    def goal_response_cb(self, future: Future) -> None:
+    def _goal_response_cb(self, future: Future) -> None:
         self.goal_handle = future.result()
         assert self.goal_handle is not None
         if not self.goal_handle.accepted:
@@ -159,15 +158,10 @@ class ActionClientHandler(Generic[ROSActionGoalT, ROSActionResultT, ROSActionFee
             self.goal_handle = None
             return
         result_future: Future = self.goal_handle.get_result_async()
-        result_future.add_done_callback(self.get_result_cb)
+        result_future.add_done_callback(self._get_result_cb)
 
-    def goal_cancel_cb(self, _: Future) -> None:
+    def _goal_cancel_cb(self, _: Future) -> None:
         self.error_callback(Exception(f"Action goal was canceled"))
         self.goal_canceled = True
         self.goal_handle = None
         self.action_client.destroy()
-
-    def cancel_goal(self) -> None:
-        if self.goal_handle:
-            cancel_goal_future = self.goal_handle.cancel_goal_async()
-            cancel_goal_future.add_done_callback(self.goal_cancel_cb)
