@@ -139,8 +139,6 @@ class RosbridgeWebsocketNode(Node):
         RosbridgeWebSocket.protocol_parameters = self.protocol_parameters
         RosbridgeWebSocket.use_compression = self.use_compression
 
-        self._start_server()
-
     def _handle_parameters(self) -> None:
         # Parse command line arguments
         args = parse_args()
@@ -245,9 +243,10 @@ async def async_main() -> None:
             print(f"Retry spin")
             spin_thread_fn()
 
-    spin_thread = threading.Thread(target=executor.spin)
+    spin_thread = threading.Thread(target=node.executor.spin)
     spin_thread.start()
 
+    node._start_server()
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
     signal_handled = False

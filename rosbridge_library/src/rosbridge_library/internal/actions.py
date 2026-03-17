@@ -123,8 +123,8 @@ class ActionClientHandler(Generic[ROSActionGoalT, ROSActionResultT, ROSActionFee
         self.server_timeout_time = server_timeout_time
         self.goal_handle: ClientGoalHandle | None = None
         self.goal_canceled = False
-        self.action_client = ActionClient(node_handle, get_action_class(action_type), action)
         self.result = None
+        self.action_client = ActionClient(self.node_handle, get_action_class(self.action_type), self.action)
 
     def send_goal(
         self,
@@ -140,13 +140,14 @@ class ActionClientHandler(Generic[ROSActionGoalT, ROSActionResultT, ROSActionFee
             self.error_callback(Exception(msg))
             self.goal_handle = None
             return None
-        send_goal_future = self.action_client.send_goal_async(inst, feedback_callback=self.feedback_callback)
+        send_goal_future : Future = self.action_client.send_goal_async(inst, feedback_callback=self.feedback_callback)
         send_goal_future.add_done_callback(self.goal_response_cb)
         return send_goal_future
 
     def get_result_cb(self, future: Future) -> None:
         self.success_callback(extract_values(future.result()))
         self.goal_handle = None
+        self.action_client.destroy()
 
     def goal_response_cb(self, future: Future) -> None:
         self.goal_handle = future.result()
@@ -163,6 +164,7 @@ class ActionClientHandler(Generic[ROSActionGoalT, ROSActionResultT, ROSActionFee
         self.error_callback(Exception(f"Action goal was canceled"))
         self.goal_canceled = True
         self.goal_handle = None
+        self.action_client.destroy()
 
     def cancel_goal(self) -> None:
         if self.goal_handle:
