@@ -33,8 +33,9 @@
 from __future__ import annotations
 
 import fnmatch
+from collections.abc import Callable
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from action_msgs.msg import GoalStatus
 
@@ -212,6 +213,7 @@ class SendActionGoal(Capability):
             outgoing_message["id"] = cid
         # TODO: fragmentation, compression
         self.protocol.send(outgoing_message)
+
 
 def trim_action_name(action: str) -> str:
     if "#" in action:
