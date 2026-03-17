@@ -125,7 +125,7 @@ class ActionClientHandler(Generic[ROSActionGoalT, ROSActionResultT, ROSActionFee
         self,
         args: list | dict[str, Any] | None = None,
     ) -> Future | None:
-        inst = cast("ROSActionGoalT", get_action_goal_instance(self.action_type))
+        inst = get_action_goal_instance(self.action_type)
 
         # Populate the instance with the provided args
         args_to_action_goal_instance(inst, args)
