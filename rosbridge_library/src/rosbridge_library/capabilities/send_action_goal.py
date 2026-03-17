@@ -71,7 +71,9 @@ class SendActionGoal(Capability):
         self.client_handler_list = {}
 
         # Register the operations that this capability provides
-        protocol.register_operation("send_action_goal", lambda msg: self.add_task_to_executor(msg, self.send_action_goal))
+        protocol.register_operation(
+            "send_action_goal", lambda msg: self.add_task_to_executor(msg, self.send_action_goal)
+        )
         protocol.register_operation(
             "cancel_action_goal",
             lambda msg: self.add_task_to_executor(msg, self.cancel_action_goal),
@@ -79,13 +81,9 @@ class SendActionGoal(Capability):
 
     def add_task_to_executor(self, msg: dict, callback: Callable[[dict], None]) -> None:
         if self.protocol.node_handle.executor:
-            self.protocol.node_handle.executor.create_task(
-                partial(callback, msg)
-            )
+            self.protocol.node_handle.executor.create_task(partial(callback, msg))
         else:
-            self.protocol.node_handle.get_logger().error(
-                f"Failed sending { msg.get("action")} goal: {msg.get("id")}, executor is None"
-            )
+            self.protocol.node_handle.get_logger().error("Failed sending, executor is None")
 
     def send_action_goal(self, message: dict) -> None:
         if self.send_action_goals_in_new_thread or not self.client_handler_list:
@@ -104,7 +102,9 @@ class SendActionGoal(Capability):
             args: list | dict[str, Any] = message.get("args", [])
 
             if self.actions_glob is not None:
-                self.protocol.log("debug", f"Action security glob enabled, checking action: {action}")
+                self.protocol.log(
+                    "debug", f"Action security glob enabled, checking action: {action}"
+                )
                 match = False
                 for glob in self.actions_glob:
                     if fnmatch.fnmatch(action, glob):
@@ -123,17 +123,25 @@ class SendActionGoal(Capability):
                     self._failure(cid, action, Exception(msg))
                     return
             else:
-                self.protocol.log("debug", "No action security glob, not checking sending action goal.")
+                self.protocol.log(
+                    "debug", "No action security glob, not checking sending action goal."
+                )
 
             # Create the callbacks
             success_callback = partial(self._success, cid, action, fragment_size, compression)
-            feedback_callback = partial(self._feedback, cid, action) if message.get("feedback", False) else None
+            feedback_callback = (
+                partial(self._feedback, cid, action) if message.get("feedback", False) else None
+            )
             error_callback = partial(self._failure, cid, action)
 
-
-            self.client_handler_list[cid] = ActionClientHandler(action, action_type, success_callback,
-                                                                error_callback, feedback_callback,
-                                                                self.protocol.node_handle)
+            self.client_handler_list[cid] = ActionClientHandler(
+                action,
+                action_type,
+                success_callback,
+                error_callback,
+                feedback_callback,
+                self.protocol.node_handle,
+            )
             self.client_handler_list[cid].send_goal(args)
         else:
             self.action_goal_queue.append(message)

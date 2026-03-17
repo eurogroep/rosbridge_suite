@@ -119,7 +119,9 @@ class ActionClientHandler(Generic[ROSActionGoalT, ROSActionResultT, ROSActionFee
         self.goal_handle: ClientGoalHandle | None = None
         self.goal_canceled = False
         self.result = None
-        self.action_client = ActionClient(self.node_handle, get_action_class(self.action_type), self.action)
+        self.action_client = ActionClient(
+            self.node_handle, get_action_class(self.action_type), self.action
+        )
 
     def send_goal(
         self,
@@ -135,7 +137,12 @@ class ActionClientHandler(Generic[ROSActionGoalT, ROSActionResultT, ROSActionFee
             self.error_callback(Exception(msg))
             self.goal_handle = None
             return None
-        send_goal_future : Future = self.action_client.send_goal_async(inst, feedback_callback=lambda: self.feedback_callback)
+        send_goal_future: Future = self.action_client.send_goal_async(
+            inst,
+            feedback_callback=lambda message: self.feedback_callback(message)
+            if self.feedback_callback
+            else None,
+        )
         send_goal_future.add_done_callback(self._goal_response_cb)
         return send_goal_future
 
