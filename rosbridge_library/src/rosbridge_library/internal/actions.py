@@ -31,8 +31,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generic, cast
+from typing import TYPE_CHECKING, Any, Generic
+
 from rclpy.action import ActionClient
+
 from rosbridge_library.internal.message_conversion import (
     extract_values,
     populate_instance,
@@ -56,7 +58,6 @@ if TYPE_CHECKING:
 
     from rosbridge_library.internal.type_support import (
         FeedbackMessage,
-        GetResultServiceResponse,
         ROSMessage,
     )
 
@@ -168,7 +169,7 @@ class ActionClientHandler(Generic[ROSActionGoalT, ROSActionResultT, ROSActionFee
         result_future.add_done_callback(self._get_result_cb)
 
     def _goal_cancel_cb(self, _: Future) -> None:
-        self.error_callback(Exception(f"Action goal was canceled"))
+        self.error_callback(Exception("Action goal was canceled"))
         self.goal_canceled = True
         self.goal_handle = None
         self.action_client.destroy()
