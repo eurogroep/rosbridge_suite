@@ -33,7 +33,6 @@
 from __future__ import annotations
 
 import fnmatch
-from collections.abc import Callable
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
@@ -44,6 +43,7 @@ from rosbridge_library.internal.actions import ActionClientHandler
 from rosbridge_library.internal.message_conversion import extract_values
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from rosbridge_library.internal.type_support import FeedbackMessage, ROSMessage
     from rosbridge_library.protocol import Protocol
 
@@ -91,7 +91,8 @@ class SendActionGoal(Capability):
             # Pull out the ID
             cid: str | None = message.get("id")
             if cid is None:
-                raise ValueError("Action goal must have an ID")
+                msg = "Action goal must have an ID"
+                raise ValueError(msg)
             # Typecheck the args
             self.basic_type_check(message, self.send_action_goal_msg_fields)
 
