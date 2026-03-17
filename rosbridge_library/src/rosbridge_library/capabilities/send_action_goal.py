@@ -84,8 +84,6 @@ class SendActionGoal(Capability):
             )
 
     def send_action_goal(self, message: dict) -> None:
-        print(len(self.client_handler_list))
-        print(self.client_handler_list)
         if self.send_action_goals_in_new_thread or not self.client_handler_list:
             # Pull out the ID
             cid: str | None = message.get("id")
