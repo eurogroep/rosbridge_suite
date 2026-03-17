@@ -58,7 +58,7 @@ class SendActionGoal(Capability):
     cancel_action_goal_msg_fields = ((True, "action", str),)
 
     client_handler_list: dict[str, ActionClientHandler]
-    action_goal_queue: list[dict] = []
+    action_goal_queue: list[dict] = []  # noqa: RUF012
 
     parameter_names = ("actions_glob", "send_action_goals_in_new_thread")
 
