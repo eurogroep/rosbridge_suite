@@ -184,7 +184,6 @@ class SendActionGoal(Capability):
         self.client_handler_list.pop(cid, None)
         if self.action_goal_queue:
             self.send_action_goal(self.action_goal_queue.pop(0))
-        print(len(self.client_handler_list))
 
     def _failure(self, cid: str | None, action: str, exc: Exception) -> None:
         self.protocol.log("error", f"send_action_goal {type(exc).__name__}: {cid}")
@@ -202,7 +201,6 @@ class SendActionGoal(Capability):
         self.client_handler_list.pop(cid, None)
         if self.action_goal_queue:
             self.send_action_goal(self.action_goal_queue.pop(0))
-        print(len(self.client_handler_list))
 
     def _feedback(self, cid: str | None, action: str, message: FeedbackMessage[ROSMessage]) -> None:
         outgoing_message = {
@@ -214,8 +212,6 @@ class SendActionGoal(Capability):
             outgoing_message["id"] = cid
         # TODO: fragmentation, compression
         self.protocol.send(outgoing_message)
-        print(len(self.client_handler_list))
-
 
 def trim_action_name(action: str) -> str:
     if "#" in action:
