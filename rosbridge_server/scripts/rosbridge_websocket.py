@@ -245,7 +245,7 @@ async def async_main() -> None:
             print(f"Retry spin")
             spin_thread_fn()
 
-    spin_thread = threading.Thread(target=spin_thread_fn)
+    spin_thread = threading.Thread(target=executor.spin)
     spin_thread.start()
 
     loop = asyncio.get_running_loop()
