@@ -138,7 +138,6 @@ class SendActionGoal(Capability):
             error_callback = partial(self._failure, cid, action)
 
             clientHandler = self.client_handler_list.get(action)
-            print(len(self.client_handler_list), clientHandler == None)
 
             if clientHandler is not None:
                 clientHandler.cancel_goal()
