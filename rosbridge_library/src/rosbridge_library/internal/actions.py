@@ -155,7 +155,6 @@ class ActionClientHandler(Generic[ROSActionGoalT, ROSActionResultT, ROSActionFee
     def _get_result_cb(self, future: Future) -> None:
         self.success_callback(extract_values(future.result()))
         self.goal_handle = None
-        self.action_client.destroy()
 
     def _goal_response_cb(self, future: Future) -> None:
         self.goal_handle = future.result()
@@ -172,4 +171,3 @@ class ActionClientHandler(Generic[ROSActionGoalT, ROSActionResultT, ROSActionFee
         self.error_callback(Exception("Action goal was canceled"))
         self.goal_canceled = True
         self.goal_handle = None
-        self.action_client.destroy()

@@ -137,15 +137,28 @@ class SendActionGoal(Capability):
             )
             error_callback = partial(self._failure, cid, action)
 
-            self.client_handler_list[cid] = ActionClientHandler(
-                action,
-                action_type,
-                success_callback,
-                error_callback,
-                feedback_callback,
-                self.protocol.node_handle,
-            )
-            self.client_handler_list[cid].send_goal(args)
+            clientHandler = self.client_handler_list.get(action)
+            print(len(self.client_handler_list), clientHandler == None)
+
+            if clientHandler is not None:
+                clientHandler.cancel_goal()
+
+                clientHandler.success_callback = success_callback
+                clientHandler.error_callback = error_callback
+                clientHandler.feedback_callback = feedback_callback
+
+            else:
+                clientHandler = ActionClientHandler(
+                    action,
+                    action_type,
+                    success_callback,
+                    error_callback,
+                    feedback_callback,
+                    self.protocol.node_handle,
+                )
+                self.client_handler_list[action] = clientHandler
+
+            clientHandler.send_goal(args)
         else:
             self.action_goal_queue.append(message)
 
@@ -162,8 +175,8 @@ class SendActionGoal(Capability):
         cid = extract_id(action, cid)
 
         # Cancel the action
-        if cid in self.client_handler_list:
-            self.client_handler_list[cid].cancel_goal()
+        if action in self.client_handler_list:
+            self.client_handler_list[action].cancel_goal()
 
     def _success(
         self,
@@ -182,9 +195,10 @@ class SendActionGoal(Capability):
         }
         if cid is not None:
             outgoing_message["id"] = cid
+
+        self._resetClientHandler(action)
         # TODO: fragmentation, compression
         self.protocol.send(outgoing_message)
-        self.client_handler_list.pop(cid, None)
         if self.action_goal_queue:
             self.send_action_goal(self.action_goal_queue.pop(0))
 
@@ -200,8 +214,9 @@ class SendActionGoal(Capability):
         }
         if cid is not None:
             outgoing_message["id"] = cid
+
+        self._resetClientHandler(action)
         self.protocol.send(outgoing_message)
-        self.client_handler_list.pop(cid, None)
         if self.action_goal_queue:
             self.send_action_goal(self.action_goal_queue.pop(0))
 
@@ -215,6 +230,17 @@ class SendActionGoal(Capability):
             outgoing_message["id"] = cid
         # TODO: fragmentation, compression
         self.protocol.send(outgoing_message)
+
+    def _resetClientHandler(self, action: str | None) -> None:
+        if action is None:
+            return
+
+        clientHandler = self.client_handler_list.get(action)
+
+        if clientHandler:
+            clientHandler.goal_handle = None
+            clientHandler.goal_canceled = False
+            clientHandler.result = None
 
 
 def trim_action_name(action: str) -> str:
