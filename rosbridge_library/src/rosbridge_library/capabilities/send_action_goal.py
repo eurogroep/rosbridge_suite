@@ -74,7 +74,8 @@ class SendActionGoal(Capability):
 
         # Register the operations that this capability provides
         protocol.register_operation(
-            "send_action_goal", lambda msg: self.add_task_to_executor(msg, self.send_action_goal)
+            "send_action_goal",
+            lambda msg: self.add_task_to_executor(msg, self.send_action_goal),
         )
         protocol.register_operation(
             "cancel_action_goal",
@@ -127,7 +128,8 @@ class SendActionGoal(Capability):
                     return
             else:
                 self.protocol.log(
-                    "debug", "No action security glob, not checking sending action goal."
+                    "debug",
+                    "No action security glob, not checking sending action goal.",
                 )
 
             # Create the callbacks
