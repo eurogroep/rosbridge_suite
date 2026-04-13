@@ -2,6 +2,13 @@
 Changelog for package rosbridge_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* remove unit tests
+* fix: Workaround when executor spin crashes
+* fixed
+* Contributors: Yannick de Hoop, rick
+
 2.5.0 (2026-03-02)
 ------------------
 * fix: Reduce idle CPU consumption of websocket server (backport `#1040 <https://github.com/RobotWebTools/rosbridge_suite/issues/1040>`_) (`#1153 <https://github.com/RobotWebTools/rosbridge_suite/issues/1153>`_)

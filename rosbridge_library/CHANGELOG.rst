@@ -2,6 +2,19 @@
 Changelog for package rosbridge_library
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Revert "fix: No base64 encoding uint8[]"
+  This reverts commit 0a0a0727d50b66771909cd848578e76e39c923e9.
+* lint
+* Remove debug print for client handler length check
+  Removed debug print statement for client handler check.
+* hold client handlers by action name and not by cid, reuse them aswell
+* backport yannick's changes to jazzy
+* more unit tests removed, rejoice!
+* fix: No base64 encoding uint8[]
+* Contributors: Rick Huisman, Yannick de Hoop, rick
+
 2.5.0 (2026-03-02)
 ------------------
 * fix: numpy.ndarray not handled in CBOR serialization (backport `#1161 <https://github.com/RobotWebTools/rosbridge_suite/issues/1161>`_) (`#1162 <https://github.com/RobotWebTools/rosbridge_suite/issues/1162>`_)
