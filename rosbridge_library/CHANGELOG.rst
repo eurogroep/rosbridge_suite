@@ -2,8 +2,8 @@
 Changelog for package rosbridge_library
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.5.1 (2026-04-13)
+------------------
 * Revert "fix: No base64 encoding uint8[]"
   This reverts commit 0a0a0727d50b66771909cd848578e76e39c923e9.
 * lint

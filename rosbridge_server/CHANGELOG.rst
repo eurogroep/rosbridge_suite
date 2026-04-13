@@ -2,8 +2,8 @@
 Changelog for package rosbridge_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.5.1 (2026-04-13)
+------------------
 * remove unit tests
 * fix: Workaround when executor spin crashes
 * fixed
